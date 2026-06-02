@@ -16,8 +16,8 @@ export default async function handler(req, res) {
     
     Bu verileri kullanarak kullanıcıya maksimum 2 paragraflık, metaforlar içeren ve ona kendi gücünü hatırlatan bir analiz yaz. Çıktı sadece bu analiz metni olsun, ekstra bir giriş veya selamlama yapma.`;
 
-    // İstisnasız her hesapta çalışan, en stabil model olan 1.0-pro'ya geçtik
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${apiKey}`;
+    // Google'ın aktif ve yayında olan modeli: Gemini 2.5 Flash
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
