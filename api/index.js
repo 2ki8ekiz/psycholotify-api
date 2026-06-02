@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     
     Bu verileri kullanarak kullanıcıya maksimum 2 paragraflık, metaforlar içeren ve ona kendi gücünü hatırlatan bir analiz yaz. Çıktı sadece bu analiz metni olsun, ekstra bir giriş veya selamlama yapma.`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro"});
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
