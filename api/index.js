@@ -14,9 +14,7 @@ export default async function handler(req, res) {
     - Şiddeti: ${intensity}/10
     - Kullanıcının notu: '${note}'
     
-    Bu verileri kullanarak kullanıcıya maksimum 2 paragraflık, metaforlar içeren ve ona kendi gücünü hatırlatan bir analiz yaz. 
-    
-    ÖNEMLİ FORMAT KURALI: Yanıtına MUTLAKA bu analizin ruhunu temsil eden tek bir EMOJİ (ikon) koyarak ve yanına " Sana Özel Aynalama" yazarak başla. Ardından iki alt satıra geçip analizini yaz. Başka hiçbir selamlama yapma.`;
+    Bu verileri kullanarak kullanıcıya maksimum 2 paragraflık, metaforlar içeren ve ona kendi gücünü hatırlatan bir analiz yaz. Yanıtına doğrudan analiz metniyle başla. Ekstra hiçbir başlık, ikon, selamlama veya giriş cümlesi ekleme.`;
 
     // Google'ın aktif ve yayında olan modeli: Gemini 2.5 Flash
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
