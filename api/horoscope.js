@@ -1,75 +1,74 @@
 export default async function handler(req, res) {
-  // Sadece POST isteklerini kabul ediyoruz
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Sadece POST metodu kabul edilir' });
   }
 
   try {
-    const { sign, message, history } = req.body;
+    let body = req.body;
+    if (typeof body === 'string') body = JSON.parse(body);
+    const { sign, message, history } = body;
+    
     const apiKey = process.env.GEMINI_API_KEY;
-
     if (!apiKey) {
-      console.error("API Key Bulunamadı!");
-      return res.status(500).json({ error: 'Sistem ayarlarında API anahtarı eksik.' });
+      return res.status(500).json({ error: 'API Anahtarı eksik.' });
     }
 
-    // Jungcu ve derin farkındalık odaklı sistem yönergesi (Persona tanımı)
-    const systemInstructionText = `Sen Jungcu analitik psikoloji ilkelerini astrolojik sembollerle harmanlayan, geleceği tahmin etmek yerine 'şimdi ve burada' bilincine odaklanan bilge bir İçsel Rehbersin. Kesinlikle falcılık, kehanet veya klinik teşhis yapmazsın. Amacın, burçların evrensel arketiplerini kullanarak kullanıcıya o günkü potansiyellerini hatırlatmak ve edebi, sıcak, samimi bir farkındalık sunmaktır. Sadece Türkçe karakterlerle, sıcak bir sahaf romanı dilinde konuş.`;
+    // Sistemin ruhu ve ilk tetikleyici sorumuz
+    const systemPrompt = `Sen Jungcu analitik psikoloji ilkelerini astrolojik sembollerle harmanlayan bilge bir İçsel Rehbersin. Falcılık veya klinik teşhis yapmazsın. Amacın sıcak, edebi ve samimi bir farkındalık sunmaktır. Sadece Türkçe karakterlerle yaz.`;
+    const initialUserPrompt = `Lütfen ${sign} burcu için bugüne özel, gölge ve aydınlık yönlerini ele alan edebi bir psikolojik farkındalık fısıltısı yaz. Doğrudan metne başla.`;
 
     let contents = [];
-
-    // Gelen geçmiş (history) verisini güvenli bir şekilde kontrol ediyoruz
     const safeHistory = Array.isArray(history) ? history : [];
 
     if (safeHistory.length === 0) {
-      // 1. Durum: İlk defa burca tıklandı, günlük farkındalık yorumu üretiliyor
-      contents = [{
+      // DURUM 1: İlk defa tıklanıyor. Temiz bir sayfa açıyoruz.
+      contents.push({
         role: "user",
-        parts: [{ text: `Lütfen ${sign} burcu için bugüne özel, onun gölge ve aydınlık yönlerini ele alan, maksimum iki paragraflık edebi ve derin bir psikolojik farkındalık fısıltısı yaz. Doğrudan metne başla.` }]
-      }];
+        parts: [{ text: systemPrompt + "\n\n" + initialUserPrompt }]
+      });
     } else {
-      // 2. Durum: Kullanıcı yorum hakkında soru soruyor, sohbet devam ediyor
-      contents = [...safeHistory];
-      if (message) {
-        contents.push({
-          role: "user",
-          parts: [{ text: message }]
-        });
+      // DURUM 2: Sohbet devam ediyor. 
+      // Gemini çökmesin diye sohbeti zorla "user" (kullanıcı) ile başlatıyoruz.
+      contents.push({
+        role: "user",
+        parts: [{ text: systemPrompt + "\n\n" + initialUserPrompt }]
+      });
+
+      // Android'den gelen önceki konuşmaları sıraya diziyoruz
+      for(let item of safeHistory) {
+         contents.push({
+           role: item.role === 'model' ? 'model' : 'user',
+           parts: item.parts
+         });
       }
+
+      // Ve son olarak kullanıcının yeni yazdığı soruyu ekliyoruz
+      contents.push({
+        role: "user",
+        parts: [{ text: message }]
+      });
     }
 
-    // En güncel ve sabırlı Gemini API adresi
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-    // Gemini API'sine resmi formatta istek gönderiyoruz
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: contents,
-        systemInstruction: {
-          parts: [{ text: systemInstructionText }]
-        }
-      })
+      body: JSON.stringify({ contents: contents })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Gemini API Kaynaklı Hata:", data);
-      return res.status(500).json({ error: 'Yapay zeka motoru bağlantıyı reddetti.' });
+      console.error("Gemini Reddedilme Hatası:", data);
+      return res.status(500).json({ error: 'Yapay zeka formatı reddetti.' });
     }
 
-    // Güvenli veri okuma: candidates dizisinin boş olup olmadığını kontrol ediyoruz
-    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-      const text = data.candidates[0].content.parts[0].text;
-      return res.status(200).json({ reply: text });
-    } else {
-      return res.status(500).json({ error: 'Yapay zekadan geçerli bir yanıt alınamadı.' });
-    }
+    const text = data.candidates[0].content.parts[0].text;
+    return res.status(200).json({ reply: text });
 
   } catch (error) {
-    console.error("Sunucu İçi Hata oluştu:", error);
-    return res.status(500).json({ error: 'Burç analizi hazırlanırken sunucu içi bir çökme yaşandı.' });
+    console.error("Sunucu Çökmesi:", error);
+    return res.status(500).json({ error: 'Sunucu içi işlem hatası.' });
   }
 }
