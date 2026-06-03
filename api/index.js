@@ -1,13 +1,21 @@
 export default async function handler(req, res) {
+  // Sadece POST isteklerini kabul ediyoruz
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Sadece POST metodu kabul edilir' });
   }
 
   try {
+    // Android uygulamasından gelen verileri çözüyoruz
     const { mood, intensity, note } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
-   const prompt = `Sen empatik, Jung arketiplerine ve Bilişsel Davranışçı yaklaşımlara hakim bir içgörü rehberisin. Tıbbi terimler kullanmazsın, klinik teşhis koymazsın. Amacın, kullanıcının anlattıklarından yola çıkarak ona sıcak, edebi ve farkındalık yaratacak bir 'okuma' sunmaktır.
+    if (!apiKey) {
+      console.error("API Key Bulunamadı!");
+      return res.status(500).json({ error: 'Sistem ayarlarında API anahtarı eksik.' });
+    }
+
+    // Sadeleştirilmiş ve netleştirilmiş Jungcu/BDT promptu
+    const prompt = `Sen empatik, Jung arketiplerine ve Bilişsel Davranışçı yaklaşımlara hakim bir içgörü rehberisin. Tıbbi terimler kullanmazsın, klinik teşhis koymazsın. Amacın, kullanıcının anlattıklarından yola ederek ona sıcak, edebi ve farkındalık yaratacak bir 'okuma' sunmaktır.
     
     Kullanıcının bugünkü durumu:
     - Temel Duygu: ${mood}
@@ -16,16 +24,15 @@ export default async function handler(req, res) {
     
     Bu verileri kullanarak kullanıcıya maksimum 2 paragraflık, metaforlar içeren ve ona kendi gücünü hatırlatan bir analiz yaz. Yanıtına doğrudan analiz metniyle başla. Ekstra hiçbir başlık, ikon, selamlama veya giriş cümlesi ekleme.`;
 
-    // Google'ın aktif ve yayında olan modeli: Gemini 2.5 Flash
+    // En güncel ve hızlı Gemini modeli adresi
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
+          role: "user",
           parts: [{ text: prompt }]
         }]
       })
@@ -34,16 +41,18 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("API Hatası:", data);
-      return res.status(500).json({ error: 'Yapay zeka sunucusu yanıt vermedi.' });
+      console.error("Gemini API Kaynaklı Hata:", data);
+      return res.status(500).json({ error: 'Yapay zeka motoru yanıt vermeyi reddetti.' });
     }
 
+    // Gelen yanıtı ayıklıyoruz
     const text = data.candidates[0].content.parts[0].text;
-
+    
+    // Android uygulamasının HomeScreen/InsightScreen içinde beklediği "analysis" anahtarıyla yanıt dönüyoruz
     res.status(200).json({ analysis: text });
 
   } catch (error) {
-    console.error("Sunucu Hatası:", error);
-    res.status(500).json({ error: 'Analiz oluşturulurken sunucuda bir hata oluştu.' });
+    console.error("Sunucu İçi Çökme Hatası:", error);
+    res.status(500).json({ error: 'İçgörü hazırlanırken sunucu içi bir hata oluştu.' });
   }
 }
