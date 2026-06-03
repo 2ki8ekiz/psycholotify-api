@@ -7,14 +7,16 @@ export default async function handler(req, res) {
     const { mood, intensity, note } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
-    const prompt = `Sen empatik, Jung arketiplerine ve Bilişsel Davranışçı yaklaşımlara hakim bir içgörü rehberisin. Tıbbi terimler kullanmazsın, klinik teşhis koymazsın. Amacın, kullanıcının anlattıklarından yola çıkarak ona sıcak, edebi ve farkındalık yaratacak bir 'okuma' sunmaktır.
+   const prompt = `Sen empatik, Jung arketiplerine ve Bilişsel Davranışçı yaklaşımlara hakim bir içgörü rehberisin. Tıbbi terimler kullanmazsın, klinik teşhis koymazsın. Amacın, kullanıcının anlattıklarından yola çıkarak ona sıcak, edebi ve farkındalık yaratacak bir 'okuma' sunmaktır.
     
     Kullanıcının bugünkü durumu:
     - Temel Duygu: ${mood}
     - Şiddeti: ${intensity}/10
     - Kullanıcının notu: '${note}'
     
-    Bu verileri kullanarak kullanıcıya maksimum 2 paragraflık, metaforlar içeren ve ona kendi gücünü hatırlatan bir analiz yaz. Çıktı sadece bu analiz metni olsun, ekstra bir giriş veya selamlama yapma.`;
+    Bu verileri kullanarak kullanıcıya maksimum 2 paragraflık, metaforlar içeren ve ona kendi gücünü hatırlatan bir analiz yaz. 
+    
+    ÖNEMLİ FORMAT KURALI: Yanıtına MUTLAKA bu analizin ruhunu temsil eden tek bir EMOJİ (ikon) koyarak ve yanına " Sana Özel Aynalama" yazarak başla. Ardından iki alt satıra geçip analizini yaz. Başka hiçbir selamlama yapma.`;
 
     // Google'ın aktif ve yayında olan modeli: Gemini 2.5 Flash
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
